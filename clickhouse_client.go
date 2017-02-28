@@ -1,7 +1,6 @@
 package telegraf_beget_clickhouse_plugin
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/influxdata/telegraf"
@@ -11,9 +10,6 @@ import (
 
 type ClickhouseClient struct {
 	URL        string
-	Username   string
-	Password   string
-	Database   string
 	Timeout    time.Duration
 	connection *clickhouse.Conn
 }
@@ -42,12 +38,7 @@ func (c *ClickhouseClient) Description() string {
 func (c *ClickhouseClient) SampleConfig() string {
 	return `
 # URL to connect
-url = "http://localhost:8123"
-# Username and password to auth
-username = "default"
-password = ""
-# Database to insert data
-database = "default"`
+url = "http://localhost:8123"`
 }
 
 func (c *ClickhouseClient) Write(metrics []telegraf.Metric) error {
@@ -74,7 +65,6 @@ func (c *ClickhouseClient) Write(metrics []telegraf.Metric) error {
 		row = append(row, date, datetime)
 
 		query, err := clickhouse.BuildInsert(table, columns, row)
-		fmt.Println(query.Stmt)
 		if err != nil {
 			return err
 		}
