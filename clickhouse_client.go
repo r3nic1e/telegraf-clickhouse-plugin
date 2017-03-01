@@ -57,29 +57,59 @@ create_sql = ["CREATE TABLE IF NOT EXISTS blablabla""]`
 }
 
 func (c *ClickhouseClient) Write(metrics []telegraf.Metric) error {
+	inserts := make(map[string](map[string][]interface{}))
+
 	for _, metric := range metrics {
 		table := c.Database + "." + metric.Name()
 
-		var columns clickhouse.Columns
-		var row clickhouse.Row
+		if _, exists := inserts[table]; !exists {
+			insert := make(map[string][]interface{})
+			for name := range metric.Tags() {
+				insert[name] = make([]interface{}, 0)
+			}
 
-		for name, value := range metric.Tags() {
-			columns = append(columns, name)
-			row = append(row, value)
+			for name := range metric.Fields() {
+				insert[name] = make([]interface{}, 0)
+			}
+			insert["date"] = make([]interface{}, 0)
+			insert["datetime"] = make([]interface{}, 0)
+
+			inserts[table] = insert
 		}
 
-		for name, value := range metric.Fields() {
-			columns = append(columns, name)
-			row = append(row, value)
+		insert := inserts[table]
+		for name := range insert {
+			if value, ok := metric.Fields()[name]; ok {
+				insert[name] = append(insert[name], value)
+			} else if value, ok := metric.Tags()[name]; ok {
+				insert[name] = append(insert[name], value)
+			}
 		}
-
-		columns = append(columns, "date", "datetime")
 
 		date := metric.Time().Format("2006-01-02")
 		datetime := metric.Time().Format("2006-01-02 15:04:05")
-		row = append(row, date, datetime)
+		insert["date"] = append(insert["date"], date)
+		insert["datetime"] = append(insert["datetime"], datetime)
+	}
 
-		query, err := clickhouse.BuildInsert(table, columns, row)
+	for table, insert := range inserts {
+		var columns clickhouse.Columns
+		var rows clickhouse.Rows
+
+		for name, values := range insert {
+			columns = append(columns, name)
+
+			length := len(values)
+			if len(rows) == 0 {
+				rows = make(clickhouse.Rows, length)
+			}
+
+			for i, value := range values {
+				rows[i] = append(rows[i], value)
+			}
+		}
+
+		query, err := clickhouse.BuildMultiInsert(table, columns, rows)
 		if err != nil {
 			return err
 		}
@@ -88,6 +118,7 @@ func (c *ClickhouseClient) Write(metrics []telegraf.Metric) error {
 		if err != nil {
 			return err
 		}
+
 	}
 	return nil
 }
@@ -95,7 +126,7 @@ func (c *ClickhouseClient) Write(metrics []telegraf.Metric) error {
 func newClickhouse() *ClickhouseClient {
 	return &ClickhouseClient{
 		Database: "default",
-		timeout: time.Minute,
+		timeout:  time.Minute,
 	}
 }
 
