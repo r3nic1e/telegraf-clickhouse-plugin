@@ -9,20 +9,31 @@ import (
 )
 
 type ClickhouseClient struct {
-	URL        string
-	Timeout    time.Duration
+	URL      string
+	Database string
+	SQLs     []string `toml:"create_sql"`
+
+	timeout    time.Duration
 	connection *clickhouse.Conn
 }
 
 func (c *ClickhouseClient) Connect() error {
 	transport := clickhouse.NewHttpTransport()
-	transport.Timeout = c.Timeout
+	transport.Timeout = c.timeout
 
 	c.connection = clickhouse.NewConn(c.URL, transport)
 
 	err := c.connection.Ping()
 	if err != nil {
 		return err
+	}
+
+	for _, create_sql := range c.SQLs {
+		query := clickhouse.NewQuery(create_sql)
+		err = query.Exec(c.connection)
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -38,12 +49,16 @@ func (c *ClickhouseClient) Description() string {
 func (c *ClickhouseClient) SampleConfig() string {
 	return `
 # URL to connect
-url = "http://localhost:8123"`
+url = "http://localhost:8123"
+# Database to use
+database = "default"
+# SQLs to create tables
+create_sql = ["CREATE TABLE IF NOT EXISTS blablabla""]`
 }
 
 func (c *ClickhouseClient) Write(metrics []telegraf.Metric) error {
 	for _, metric := range metrics {
-		table := metric.Name()
+		table := c.Database + "." + metric.Name()
 
 		var columns clickhouse.Columns
 		var row clickhouse.Row
@@ -79,7 +94,8 @@ func (c *ClickhouseClient) Write(metrics []telegraf.Metric) error {
 
 func newClickhouse() *ClickhouseClient {
 	return &ClickhouseClient{
-		Timeout: time.Minute,
+		Database: "default",
+		timeout: time.Minute,
 	}
 }
 
