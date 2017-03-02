@@ -9,6 +9,7 @@ import (
 )
 
 type clickhouseMetric map[string]interface{}
+
 func (cm *clickhouseMetric) GetColumns() []string {
 	columns := make([]string, 0)
 
@@ -25,7 +26,7 @@ func (cm *clickhouseMetric) AddData(name string, value interface{}, overwrite bo
 	(*cm)[name] = value
 }
 
-func newClickhouseMetric(metric telegraf.Metric) *clickhouseMetric {
+func newClickhouseMetric(metric telegraf.Metric, timeShift int64) *clickhouseMetric {
 	cm := &clickhouseMetric{}
 
 	for name, value := range metric.Fields() {
@@ -35,7 +36,7 @@ func newClickhouseMetric(metric telegraf.Metric) *clickhouseMetric {
 		cm.AddData(name, value, true)
 	}
 
-	metricTime := metric.Time().Add(- 3 * time.Hour)
+	metricTime := metric.Time().Add(time.Duration(timeShift))
 	date := metricTime.Format("2006-01-02")
 	datetime := metricTime.Format("2006-01-02 15:04:05")
 	cm.AddData("date", date, true)
@@ -45,6 +46,7 @@ func newClickhouseMetric(metric telegraf.Metric) *clickhouseMetric {
 }
 
 type clickhouseMetrics []*clickhouseMetric
+
 func (cms *clickhouseMetrics) GetColumns() []string {
 	if len(*cms) == 0 {
 		return []string{}
@@ -58,8 +60,8 @@ func (cms *clickhouseMetrics) AddMissingColumn(name string, value interface{}) {
 		metric.AddData(name, value, false)
 	}
 }
-func (cms *clickhouseMetrics) AddMetric(metric telegraf.Metric) {
-	newMetric := newClickhouseMetric(metric)
+func (cms *clickhouseMetrics) AddMetric(metric telegraf.Metric, timeShift int64) {
+	newMetric := newClickhouseMetric(metric, timeShift)
 
 	if len(*cms) > 0 {
 		randomMetric := (*cms)[0] // all previous metrics are same
@@ -94,9 +96,10 @@ func (cms *clickhouseMetrics) GetRowsByColumns(columns []string) clickhouse.Rows
 }
 
 type ClickhouseClient struct {
-	URL      string
-	Database string
-	SQLs     []string `toml:"create_sql"`
+	URL       string
+	Database  string
+	SQLs      []string `toml:"create_sql"`
+	TimeShift int64 `toml:"time_shift"`
 
 	timeout    time.Duration
 	connection *clickhouse.Conn
@@ -138,7 +141,9 @@ url = "http://localhost:8123"
 # Database to use
 database = "default"
 # SQLs to create tables
-create_sql = ["CREATE TABLE IF NOT EXISTS blablabla""]`
+create_sql = ["CREATE TABLE IF NOT EXISTS blablabla""]
+# Time shift for timezone
+time_shift = -3600`
 }
 
 func (c *ClickhouseClient) Write(metrics []telegraf.Metric) (err error) {
@@ -152,7 +157,7 @@ func (c *ClickhouseClient) Write(metrics []telegraf.Metric) (err error) {
 			inserts[table] = &clickhouseMetrics{}
 		}
 
-		inserts[table].AddMetric(metric)
+		inserts[table].AddMetric(metric, c.TimeShift)
 	}
 
 	for table, insert := range inserts {
