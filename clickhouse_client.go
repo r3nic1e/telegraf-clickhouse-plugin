@@ -35,7 +35,7 @@ func newClickhouseMetric(metric telegraf.Metric) *clickhouseMetric {
 		cm.AddData(name, value, true)
 	}
 
-	metricTime := metric.Time().Truncate(6 * time.Hour)
+	metricTime := metric.Time().Add(- 6 * time.Hour)
 	date := metricTime.Format("2006-01-02")
 	datetime := metricTime.Format("2006-01-02 15:04:05")
 	cm.AddData("date", date, true)
