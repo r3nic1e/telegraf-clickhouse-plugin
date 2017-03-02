@@ -8,6 +8,90 @@ import (
 	"github.com/roistat/go-clickhouse"
 )
 
+type clickhouseMetric map[string]interface{}
+func (cm *clickhouseMetric) GetColumns() []string {
+	columns := make([]string, 0)
+
+	for column := range *cm {
+		columns = append(columns, column)
+	}
+	return columns
+}
+func (cm *clickhouseMetric) AddData(name string, value interface{}, overwrite bool) {
+	if _, exists := (*cm)[name]; !overwrite && exists {
+		return
+	}
+
+	(*cm)[name] = value
+}
+
+func newClickhouseMetric(metric telegraf.Metric) *clickhouseMetric {
+	cm := &clickhouseMetric{}
+
+	for name, value := range metric.Fields() {
+		cm.AddData(name, value, true)
+	}
+	for name, value := range metric.Tags() {
+		cm.AddData(name, value, true)
+	}
+
+	date := metric.Time().Format("2006-01-02")
+	datetime := metric.Time().Format("2006-01-02 15:04:05")
+	cm.AddData("date", date, true)
+	cm.AddData("datetime", datetime, true)
+
+	return cm
+}
+
+type clickhouseMetrics []*clickhouseMetric
+func (cms *clickhouseMetrics) GetColumns() []string {
+	if len(*cms) == 0 {
+		return []string{}
+	}
+
+	randomMetric := (*cms)[0] // all previous metrics are same
+	return randomMetric.GetColumns()
+}
+func (cms *clickhouseMetrics) AddMissingColumn(name string, value interface{}) {
+	for _, metric := range *cms {
+		metric.AddData(name, value, false)
+	}
+}
+func (cms *clickhouseMetrics) AddMetric(metric telegraf.Metric) {
+	newMetric := newClickhouseMetric(metric)
+
+	if len(*cms) > 0 {
+		randomMetric := (*cms)[0] // all previous metrics are same
+
+		for name := range *newMetric {
+			if _, exists := (*randomMetric)[name]; !exists {
+				cms.AddMissingColumn(name, 0)
+			}
+		}
+
+		for name := range *randomMetric {
+			if _, exists := (*newMetric)[name]; !exists {
+				newMetric.AddData(name, 0, false)
+			}
+		}
+	}
+
+	*cms = append(*cms, newMetric)
+}
+func (cms *clickhouseMetrics) GetRowsByColumns(columns []string) clickhouse.Rows {
+	rows := make(clickhouse.Rows, 0)
+
+	for _, metric := range *cms {
+		row := make(clickhouse.Row, 0)
+		for _, column := range columns {
+			row = append(row, (*metric)[column])
+		}
+		rows = append(rows, row)
+	}
+
+	return rows
+}
+
 type ClickhouseClient struct {
 	URL      string
 	Database string
@@ -56,71 +140,41 @@ database = "default"
 create_sql = ["CREATE TABLE IF NOT EXISTS blablabla""]`
 }
 
-func (c *ClickhouseClient) Write(metrics []telegraf.Metric) error {
-	inserts := make(map[string](map[string][]interface{}))
+func (c *ClickhouseClient) Write(metrics []telegraf.Metric) (err error) {
+	err = nil
+	inserts := make(map[string]*clickhouseMetrics)
 
 	for _, metric := range metrics {
 		table := c.Database + "." + metric.Name()
 
 		if _, exists := inserts[table]; !exists {
-			insert := make(map[string][]interface{})
-			for name := range metric.Tags() {
-				insert[name] = make([]interface{}, 0)
-			}
-
-			for name := range metric.Fields() {
-				insert[name] = make([]interface{}, 0)
-			}
-			insert["date"] = make([]interface{}, 0)
-			insert["datetime"] = make([]interface{}, 0)
-
-			inserts[table] = insert
+			inserts[table] = &clickhouseMetrics{}
 		}
 
-		insert := inserts[table]
-		for name := range insert {
-			if value, ok := metric.Fields()[name]; ok {
-				insert[name] = append(insert[name], value)
-			} else if value, ok := metric.Tags()[name]; ok {
-				insert[name] = append(insert[name], value)
-			}
-		}
-
-		date := metric.Time().Format("2006-01-02")
-		datetime := metric.Time().Format("2006-01-02 15:04:05")
-		insert["date"] = append(insert["date"], date)
-		insert["datetime"] = append(insert["datetime"], datetime)
+		inserts[table].AddMetric(metric)
 	}
 
 	for table, insert := range inserts {
-		var columns clickhouse.Columns
-		var rows clickhouse.Rows
-
-		for name, values := range insert {
-			columns = append(columns, name)
-
-			length := len(values)
-			if len(rows) == 0 {
-				rows = make(clickhouse.Rows, length)
-			}
-
-			for i, value := range values {
-				rows[i] = append(rows[i], value)
-			}
+		if len(*insert) == 0 {
+			continue
 		}
 
-		query, err := clickhouse.BuildMultiInsert(table, columns, rows)
+		columns := insert.GetColumns()
+		rows := insert.GetRowsByColumns(columns)
+
+		var query clickhouse.Query
+		query, err = clickhouse.BuildMultiInsert(table, columns, rows)
 		if err != nil {
-			return err
+			continue
 		}
 
 		err = query.Exec(c.connection)
 		if err != nil {
-			return err
+			continue
 		}
 
 	}
-	return nil
+	return err
 }
 
 func newClickhouse() *ClickhouseClient {
