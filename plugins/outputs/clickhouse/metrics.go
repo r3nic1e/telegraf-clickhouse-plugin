@@ -14,6 +14,7 @@ func (cm *clickhouseMetric) GetColumns() []string {
 	}
 	return columns
 }
+
 func (cm *clickhouseMetric) AddData(name string, value interface{}, overwrite bool) {
 	if _, exists := (*cm)[name]; !overwrite && exists {
 		return
@@ -49,11 +50,13 @@ func (cms *clickhouseMetrics) GetColumns() []string {
 	randomMetric := (*cms)[0] // all previous metrics are same
 	return randomMetric.GetColumns()
 }
+
 func (cms *clickhouseMetrics) AddMissingColumn(name string, value interface{}) {
 	for _, metric := range *cms {
 		metric.AddData(name, value, false)
 	}
 }
+
 func (cms *clickhouseMetrics) AddMetric(metric telegraf.Metric) {
 	newMetric := newClickhouseMetric(metric)
 
@@ -75,6 +78,7 @@ func (cms *clickhouseMetrics) AddMetric(metric telegraf.Metric) {
 
 	*cms = append(*cms, newMetric)
 }
+
 func (cms *clickhouseMetrics) GetRowsByColumns(columns []string) [][]interface{} {
 	rows := make([][]interface{}, len(*cms))
 
