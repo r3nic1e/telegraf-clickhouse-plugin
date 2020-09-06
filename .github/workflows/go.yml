@@ -21,6 +21,9 @@ jobs:
           - amd64
           - arm
           - arm64
+    services:
+      clickhouse:
+        image: yandex/clickhouse-server
 
     steps:
     - name: Set up Go 1.x
@@ -41,3 +44,7 @@ jobs:
         GOOS: ${{ matrix.goos }}
         GOARCH: ${{ matrix.goarch }}
       if: ${{ (matrix.goarch == 'amd64') || (matrix.goos == 'linux') }}
+
+    - name: Test
+      run: go test -v ./...
+
