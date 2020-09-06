@@ -41,3 +41,29 @@ jobs:
         GOOS: ${{ matrix.goos }}
         GOARCH: ${{ matrix.goarch }}
       if: ${{ (matrix.goarch == 'amd64') || (matrix.goos == 'linux') }}
+
+  test:
+    runs-on: ubuntu-latest
+    services:
+      clickhouse:
+        image: yandex/clickhouse-server
+        ports:
+          - "8123:8123"
+          - "9000:9000"
+
+    steps:
+    - name: Set up Go 1.x
+      uses: actions/setup-go@v2
+      with:
+        go-version: ^1.15
+      id: go
+
+    - name: Check out code
+      uses: actions/checkout@v2
+
+    - name: Get dependencies
+      run: go get -v -t -d ./...
+
+    - name: Test
+      run: go test -v ./...
+
