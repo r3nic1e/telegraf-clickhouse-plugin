@@ -4,6 +4,6 @@ go 1.14
 
 require (
 	github.com/ClickHouse/clickhouse-go v1.4.3
-	github.com/influxdata/telegraf v1.15.2
+	github.com/influxdata/telegraf v1.15.3
 	github.com/stretchr/testify v1.6.1
 )
