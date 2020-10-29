@@ -337,8 +337,8 @@ github.com/influxdata/go-syslog/v2 v2.0.1 h1:l44S4l4Q8MhGQcoOxJpbo+QQYxJqp0vdgIV
 github.com/influxdata/go-syslog/v2 v2.0.1/go.mod h1:hjvie1UTaD5E1fTnDmxaCw8RRDrT4Ve+XHr5O2dKSCo=
 github.com/influxdata/tail v1.0.1-0.20200707181643-03a791b270e4 h1:K3A5vHPs/p8OjI4SL3l1+hs/98mhxTVDcV1Ap0c265E=
 github.com/influxdata/tail v1.0.1-0.20200707181643-03a791b270e4/go.mod h1:VeiWgI3qaGdJWust2fP27a6J+koITo/1c/UhxeOxgaM=
-github.com/influxdata/telegraf v1.16.0 h1:x0bt7VeK7ecYKsRPO34UEog19pcM09nZu1i0GVTDVYE=
-github.com/influxdata/telegraf v1.16.0/go.mod h1:dSh4ktJl+jWOdqnv26Yp9eboHolvCcnUAWanc3wlfHA=
+github.com/influxdata/telegraf v1.16.1 h1:VsLBfqoUj8rugYb/feyfvwVwerk82vBupdog9GfufMc=
+github.com/influxdata/telegraf v1.16.1/go.mod h1:Wym23OhJT2EiQY9482NxEbCCpMfDtnH7rt9ViG1P+yc=
 github.com/influxdata/toml v0.0.0-20190415235208-270119a8ce65 h1:vvyMtD5LTJc1W9sQKjDkAWdcg0478CszSdzlHtiAXCY=
 github.com/influxdata/toml v0.0.0-20190415235208-270119a8ce65/go.mod h1:zApaNFpP/bTpQItGZNNUMISDMDAnTXu9UqJ4yT3ocz8=
 github.com/influxdata/wlog v0.0.0-20160411224016-7c63b0a71ef8 h1:W2IgzRCb0L9VzMujq/QuTaZUKcH8096jWwP519mHN6Q=
@@ -576,7 +576,9 @@ github.com/wvanbergen/kafka v0.0.0-20171203153745-e2edea948ddf h1:TOV5PC6fIWwFOF
 github.com/wvanbergen/kafka v0.0.0-20171203153745-e2edea948ddf/go.mod h1:nxx7XRXbR9ykhnC8lXqQyJS0rfvJGxKyKw/sT1YOttg=
 github.com/wvanbergen/kazoo-go v0.0.0-20180202103751-f72d8611297a h1:ILoU84rj4AQ3q6cjQvtb9jBjx4xzR/Riq/zYhmDQiOk=
 github.com/wvanbergen/kazoo-go v0.0.0-20180202103751-f72d8611297a/go.mod h1:vQQATAGxVK20DC1rRubTJbZDDhhpA4QfU02pMdPxGO4=
+github.com/xdg/scram v0.0.0-20180814205039-7eeb5667e42c h1:u40Z8hqBAAQyv+vATcGgV0YCnDjqSL7/q/JyPhhJSPk=
 github.com/xdg/scram v0.0.0-20180814205039-7eeb5667e42c/go.mod h1:lB8K/P019DLNhemzwFU4jHLhdvlE6uDZjXFejJXr49I=
+github.com/xdg/stringprep v1.0.0 h1:d9X0esnoa3dFsV0FG35rAT0RIhYFlPq7MiP+DW89La0=
 github.com/xdg/stringprep v1.0.0/go.mod h1:Jhud4/sHMO4oL310DaZAKk9ZaJ08SJfe+sJh0HrGL1Y=
 github.com/yuin/goldmark v1.1.25/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
 github.com/yuin/gopher-lua v0.0.0-20180630135845-46796da1b0b4 h1:f6CCNiTjQZ0uWK4jPwhwYB8QIGGfn0ssD9kVzRUUUpk=
