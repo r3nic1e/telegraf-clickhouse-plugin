@@ -17,17 +17,12 @@ var (
 )
 
 func init() {
-	metric, err := metric.New(
+	m = metric.New(
 		"cpu",
 		TAGS,
 		FIELDS,
 		time.Now(),
 	)
-	if err != nil {
-		panic(err)
-	}
-
-	m = metric
 }
 
 func TestCreateMetric(t *testing.T) {
